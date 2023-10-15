@@ -14,7 +14,7 @@ pip install -r requirements.txt
 ```
 Try running the main script!
 ```
-python3 game.py
+python3 arena.py
 ```
 
 ##Making your own strategy

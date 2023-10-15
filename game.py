@@ -30,28 +30,4 @@ class Game:
             # bar.update(1)
             print([player.get_balance() for player in self.players], flush=True)
 
-
         return [i for i, player in enumerate(self.players) if player.get_balance() > 0][0]
-
-def main():
-    #foreach python file in sample_strategies, import class and add to strategies
-    strategy_files = os.listdir(STRATEGIES_DIR)
-    strategy_classes = []
-    strategies: List[strategy.Strategy] = []
-    strategy_names = []
-    for strategy_file in strategy_files:
-        if strategy_file.endswith(".py"):
-            strategy_classes.append(strategy_wrapper.get_securely_wrapped_class(os.path.join(STRATEGIES_DIR,strategy_file)))
-            strategy_names.append(strategy_file[:-3])
-    for i, strategy_class in enumerate(strategy_classes):
-        strategies.append(strategy_class(i))
-    print(strategy_names)
-    bb = lambda round_id: 10
-    sb = lambda round_id: 5
-    game_parameters = GameParameters(big_blind=bb, small_blind=sb)
-    game = Game(game_parameters, tuple(strategies))
-    winner = game.play()
-    print("The winner is " + strategy_names[winner])
-
-if __name__ == "__main__":
-    main()
