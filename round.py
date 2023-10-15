@@ -5,7 +5,7 @@ from hole import Hole
 from player import Player
 from strategy import Strategy
 import concurrent.futures
-
+from logger import Logger
 TIMEOUT = 1
 
 
@@ -24,7 +24,8 @@ class GameParameters:
 STAGES = range(4)
 (PREFLOP, FLOP, TURN, RIVER) = STAGES
 class Round:
-    def __init__(self, round_id, players: Tuple[Player], game_parameters: GameParameters, small_blind_index, big_blind_index):
+    def __init__(self, round_id, players: Tuple[Player], game_parameters: GameParameters, small_blind_index,
+                 big_blind_index, logger: "Logger" = None):
         self.big_blind_index = big_blind_index
         self.small_blind_index = small_blind_index
         self.bets = [0 for _ in players]
@@ -38,6 +39,9 @@ class Round:
         self.bets[self.small_blind_index] = min(game_parameters.get_small_blind(round_id), players[self.small_blind_index].get_balance())
         self.stage = PREFLOP
         self.folded = [False for _ in players]
+        self.logger: Logger = logger
+        if logger:
+            logger.create_new_round(self.big_blind_index, self.small_blind_index)
 
 
     def play(self):
@@ -71,15 +75,24 @@ class Round:
                 if not isinstance(bet, int) or bet < minimum_bet or bet + self.bets[i] > player.get_balance() or\
                         self.folded[i]:
                     self.folded[i] = True
+                    if self.logger:
+                        self.logger.log_fold(i)
                 else:
                     self.bets[i] += bet
+                    if self.logger:
+                        self.logger.log_bet(i, bet, self.bets[i])
                 i = (i + 1) % len(self.players)
             self.stage += 1
             self.community.advance_stage()
+            if self.logger:
+                self.logger.advance_stage()
+
         hands = [hole.best_hand(self.community.get_cards()) for hole in self.holes]
         # argsorted_hands = sorted(range(len(hands)), key=lambda x: hands[x], reverse=True)
-        for player, bet in zip(self.players, self.bets):
+        player_payouts = [0 for _ in self.players]
+        for i,(player, bet) in enumerate(zip(self.players, self.bets)):
             player.decrement_balance(bet)
+            player_payouts[i] -= bet
         # copy_bets = self.bets.copy()
         unique_betting_values_buckets = sorted([(bet, len([j for j in range(len(self.bets)) if self.bets[j] >= bet]))
                                          for bet in set(self.bets)])
@@ -96,11 +109,17 @@ class Round:
                 else:
                     break
             for i in sorted_potential_access[:winner_count]:
-                self.players[i].increment_balance((payout*count)//winner_count)  # may annihilate some money
+                self.players[i].increment_balance((payout*count)//winner_count)# may annihilate some money
+                player_payouts[i] += (payout*count)//winner_count
         hole_cards = [hole.get_cards_tuples() for hole in self.holes]
+        if self.logger:
+            self.logger.log_holes_cards(hole_cards)
+            self.logger.log_community_cards(self.community.get_card_tuples())
         for i, folded in enumerate(self.folded):
             if folded:
                 hole_cards[i] = None
+        if self.logger:
+            self.logger.log_results(player_payouts, [player.get_balance() for player in self.players])
         with concurrent.futures.ThreadPoolExecutor() as executor:
             l = []
             for player in self.players:

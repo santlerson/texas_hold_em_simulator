@@ -9,11 +9,12 @@ STRATEGIES_DIR = "sample_strategies"
 
 
 class Game:
-    def __init__(self, game_parameters, strategies: Tuple[strategy.Strategy]):
+    def __init__(self, game_parameters, strategies: Tuple[strategy.Strategy], logger=None):
         self.round_id = 0
         self.players: Tuple[Player] = tuple(
             [Player(strategy, game_parameters.starting_balance) for strategy in strategies])
         self.game_parameters = game_parameters
+        self.logger = logger
 
     def play(self):
         # bar = tqdm()
@@ -23,7 +24,7 @@ class Game:
             while self.players[sb_index].get_balance() <= 0:
                 sb_index = (sb_index + 1) % len(self.players)
             bb_index = (sb_index + 1) % len(self.players)
-            round = Round(self.round_id, self.players, self.game_parameters, sb_index, bb_index)
+            round = Round(self.round_id, self.players, self.game_parameters, sb_index, bb_index, self.logger)
             round.play()
             self.round_id += 1
             sb_index = (sb_index + 1) % len(self.players)
