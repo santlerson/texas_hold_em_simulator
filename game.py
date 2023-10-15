@@ -46,8 +46,8 @@ def main():
     for i, strategy_class in enumerate(strategy_classes):
         strategies.append(strategy_class(i))
     print(strategy_names)
-    bb = lambda round_id: 0
-    sb = lambda round_id: 0
+    bb = lambda round_id: 10
+    sb = lambda round_id: 5
     game_parameters = GameParameters(big_blind=bb, small_blind=sb)
     game = Game(game_parameters, tuple(strategies))
     winner = game.play()

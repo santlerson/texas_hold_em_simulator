@@ -56,7 +56,7 @@ class Round:
                 #                      self.big_blind_index, cards_tuple, self.holes[i].get_cards_tuples(), tuple(self.folded))
                 with concurrent.futures.ThreadPoolExecutor() as executor:
                     future = executor.submit(player.get_strategy().get_bet, self.round, self.game_parameters.starting_balance, tuple(self.bets),
-                                     self.big_blind_index, cards_tuple, self.holes[i].get_cards_tuples(), tuple(self.folded))
+                                     self.small_blind_index, cards_tuple, self.holes[i].get_cards_tuples(), tuple(self.folded))
                     try:
                         bet = future.result(timeout=TIMEOUT)
                     except concurrent.futures.TimeoutError:
