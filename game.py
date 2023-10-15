@@ -1,13 +1,15 @@
 from round import Round, GameParameters
-from strategy import Strategy
+import strategy
+import strategy_wrapper
 from typing import Tuple, List
 from player import Player
 import os
 
+STRATEGIES_DIR = "sample_strategies"
 
 
 class Game:
-    def __init__(self, game_parameters, strategies: Tuple[Strategy]):
+    def __init__(self, game_parameters, strategies: Tuple[strategy.Strategy]):
         self.round_id = 0
         self.players: Tuple[Player] = tuple(
             [Player(strategy, game_parameters.starting_balance) for strategy in strategies])
@@ -33,19 +35,20 @@ class Game:
 
 def main():
     #foreach python file in sample_strategies, import class and add to strategies
-    strategy_files = os.listdir("sample_strategies")
+    strategy_files = os.listdir(STRATEGIES_DIR)
     strategy_classes = []
-    strategies: List[Strategy] = []
+    strategies: List[strategy.Strategy] = []
     strategy_names = []
     for strategy_file in strategy_files:
         if strategy_file.endswith(".py"):
-            strategy_module = __import__("sample_strategies." + strategy_file[:-3], fromlist=[""])
-            strategy_classes.append(strategy_module.MyStrategy)
+            strategy_classes.append(strategy_wrapper.get_securely_wrapped_class(os.path.join(STRATEGIES_DIR,strategy_file)))
             strategy_names.append(strategy_file[:-3])
     for i, strategy_class in enumerate(strategy_classes):
         strategies.append(strategy_class(i))
     print(strategy_names)
-    game_parameters = GameParameters()
+    bb = lambda round_id: 0
+    sb = lambda round_id: 0
+    game_parameters = GameParameters(big_blind=bb, small_blind=sb)
     game = Game(game_parameters, tuple(strategies))
     winner = game.play()
     print("The winner is " + strategy_names[winner])

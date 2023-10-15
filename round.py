@@ -4,6 +4,9 @@ from community import Community
 from hole import Hole
 from player import Player
 from strategy import Strategy
+import concurrent.futures
+
+TIMEOUT = 1
 
 
 class GameParameters:
@@ -48,8 +51,22 @@ class Round:
                        for j in range(len(self.players))]) or i != self.small_blind_index or not betting_done:
                 betting_done = True
                 player = self.players[i]
-                bet = player.get_strategy().get_bet(self.round, self.game_parameters.starting_balance, tuple(self.bets),
+
+                # bet = player.get_strategy().get_bet(self.round, self.game_parameters.starting_balance, tuple(self.bets),
+                #                      self.big_blind_index, cards_tuple, self.holes[i].get_cards_tuples(), tuple(self.folded))
+                with concurrent.futures.ThreadPoolExecutor() as executor:
+                    future = executor.submit(player.get_strategy().get_bet, self.round, self.game_parameters.starting_balance, tuple(self.bets),
                                      self.big_blind_index, cards_tuple, self.holes[i].get_cards_tuples(), tuple(self.folded))
+                    try:
+                        bet = future.result(timeout=TIMEOUT)
+                    except concurrent.futures.TimeoutError:
+                        bet = -1  # fold
+                        print("Player {} timed out".format(i))
+                    except Exception as e:
+                        print("Player {} raised an exception: {}".format(i, e))
+                        bet = -1  # fold
+
+
                 minimum_bet = min(max(self.bets) - self.bets[i], player.get_balance()-self.bets[i])
                 if not isinstance(bet, int) or bet < minimum_bet or bet + self.bets[i] > player.get_balance() or\
                         self.folded[i]:
@@ -84,11 +101,24 @@ class Round:
         for i, folded in enumerate(self.folded):
             if folded:
                 hole_cards[i] = None
+        with concurrent.futures.ThreadPoolExecutor() as executor:
+            l = []
+            for player in self.players:
+                strategy: Strategy = player.get_strategy()
+                # strategy.inform_result(self.round, player.get_balance(), tuple(hole_cards), self.community.get_card_tuples(),
+                #                        tuple(self.bets))
+                l.append(executor.submit(strategy.inform_result, self.round, player.get_balance(), tuple(hole_cards), self.community.get_card_tuples(),
+                                 tuple(self.bets)))
+            for future in concurrent.futures.as_completed(l):
+                try:
+                    future.result(timeout=TIMEOUT)
+                except concurrent.futures.TimeoutError:
+                    print("Timeout")
+                except Exception as e:
+                    print(e)
 
-        for player in self.players:
-            strategy: Strategy = player.get_strategy()
-            strategy.inform_result(self.round, player.get_balance(), tuple(hole_cards), self.community.get_card_tuples(),
-                                   tuple(self.bets))
+
+
 
 
 
