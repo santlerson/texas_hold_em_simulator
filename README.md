@@ -30,3 +30,5 @@ the others!
   - `import random` (and not `from random import *` etc.)
   - `from strategy import Strategy`
   - (I will strongly consider adding support for numpy)
+
+Developed and tested on Python 3.9.2
