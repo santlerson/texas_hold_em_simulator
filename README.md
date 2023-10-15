@@ -29,3 +29,4 @@ the others!
   - `import math` (and not `from math import *` etc.)
   - `import random` (and not `from random import *` etc.)
   - `from strategy import Strategy`
+  - (I will strongly consider adding support for numpy)
