@@ -12,9 +12,11 @@ def get_securely_wrapped_class(file_path: str) -> strategy.Strategy:
     code = "".join(code)
     # code = open("strategy.py").read()+"\n"+code
     local_dict = {}
+    my_builtins = safe_builtins.copy()
+    my_builtins.update(utility_builtins)
     global_dict = {**safe_globals, **utility_builtins, "__metaclass__": type,
                    "__name__": file_path,
-                   **safe_builtins,
+                   "__builtins__": my_builtins,
                    "_write_": lambda x: x if isinstance(x, strategy.Strategy) else full_write_guard(x),
                    "_getattr_": getattr,
                    "Strategy": strategy.Strategy,
