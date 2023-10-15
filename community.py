@@ -1,4 +1,3 @@
-from deck import Deck
 class Community:
     def __init__(self, cards):
         self.cards = tuple(cards)
