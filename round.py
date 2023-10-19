@@ -6,6 +6,7 @@ from player import Player
 from strategy import Strategy
 import concurrent.futures
 from logger import Logger
+
 TIMEOUT = 1
 
 
@@ -21,8 +22,11 @@ class GameParameters:
     def get_small_blind(self, round_number):
         return self.small_blind(round_number)
 
+
 STAGES = range(4)
 (PREFLOP, FLOP, TURN, RIVER) = STAGES
+
+
 class Round:
     def __init__(self, round_id, players: Tuple[Player], game_parameters: GameParameters, small_blind_index,
                  big_blind_index, logger: "Logger" = None):
@@ -35,8 +39,10 @@ class Round:
         self.holes: List[Hole] = [Hole(self.deck.draw(2)) for _ in players]
         self.community = Community.from_deck(self.deck)
         self.players: Tuple[Player] = players
-        self.bets[self.big_blind_index] = min(game_parameters.get_big_blind(round_id), players[self.big_blind_index].get_balance())
-        self.bets[self.small_blind_index] = min(game_parameters.get_small_blind(round_id), players[self.small_blind_index].get_balance())
+        self.bets[self.big_blind_index] = min(game_parameters.get_big_blind(round_id),
+                                              players[self.big_blind_index].get_balance())
+        self.bets[self.small_blind_index] = min(game_parameters.get_small_blind(round_id),
+                                                players[self.small_blind_index].get_balance())
         self.stage = PREFLOP
         self.folded = [False for _ in players]
         self.logger: Logger = logger
@@ -44,28 +50,37 @@ class Round:
             logger.create_new_round(self.big_blind_index, self.small_blind_index)
             logger.log_blinds(self.bets[self.big_blind_index], self.bets[self.small_blind_index])
 
-
     def play(self):
         cards_tuple = self.community.get_card_tuples()
         if self.logger:
             self.logger.log_holes_cards([hole.get_cards_tuples() for hole in self.holes])
 
         while self.stage < len(STAGES) and len([i for i in range(len(self.players)) if (not self.folded[i]) and
-                                                self.players[i].get_balance()>0]) > 1:
+                                                                                       self.players[
+                                                                                           i].get_balance() > 0]) > 1:
+            has_had_chance_to_bet = [False for _ in self.players]
             cards_tuple = self.community.get_card_tuples()
-            i = self.small_blind_index
+            i = self.small_blind_index if self.stage != PREFLOP else (self.small_blind_index + 1) % len(self.players)
             betting_done = False
-            while any([(not self.folded[j]) and
-                       (self.bets[j] < min(max(self.bets),self.players[j].get_balance()))
-                       for j in range(len(self.players))]) or i != self.small_blind_index or not betting_done:
+            while any([((not self.folded[j]) and
+                        (self.bets[j] < min(max(self.bets), self.players[j].get_balance()))) or
+                       (not has_had_chance_to_bet[j])
+                       for j in range(len(self.players))]) and len([j for j in range(len(self.players)) if
+                                                                      (not self.folded[j])
+                                                                    and (self.bets[j] or
+                                                                         self.players[j].get_balance())]) > 1:
+
                 betting_done = True
+                has_had_chance_to_bet[i] = True
                 player = self.players[i]
 
                 # bet = player.get_strategy().get_bet(self.round, self.game_parameters.starting_balance, tuple(self.bets),
                 #                      self.big_blind_index, cards_tuple, self.holes[i].get_cards_tuples(), tuple(self.folded))
                 with concurrent.futures.ThreadPoolExecutor() as executor:
-                    future = executor.submit(player.get_strategy().get_bet, self.round, player.get_balance(), tuple(self.bets),
-                                     self.small_blind_index, cards_tuple, self.holes[i].get_cards_tuples(), tuple(self.folded))
+                    future = executor.submit(player.get_strategy().get_bet, self.round, player.get_balance(),
+                                             tuple(self.bets),
+                                             self.small_blind_index, cards_tuple, self.holes[i].get_cards_tuples(),
+                                             tuple(self.folded))
                     try:
                         bet = future.result(timeout=TIMEOUT)
                     except concurrent.futures.TimeoutError:
@@ -75,9 +90,8 @@ class Round:
                         print("Player {} raised an exception: {}".format(i, e))
                         bet = -1  # fold
 
-
-                minimum_bet = min(max(self.bets) - self.bets[i], player.get_balance()-self.bets[i])
-                if not isinstance(bet, int) or bet < minimum_bet or bet + self.bets[i] > player.get_balance() or\
+                minimum_bet = min(max(self.bets) - self.bets[i], player.get_balance() - self.bets[i])
+                if not isinstance(bet, int) or bet < minimum_bet or bet + self.bets[i] > player.get_balance() or \
                         self.folded[i]:
                     if self.logger and not self.folded[i]:
                         self.logger.log_fold(i)
@@ -96,12 +110,12 @@ class Round:
         hands = [hole.best_hand(self.community.get_cards()) for hole in self.holes]
         # argsorted_hands = sorted(range(len(hands)), key=lambda x: hands[x], reverse=True)
         player_payouts = [0 for _ in self.players]
-        for i,(player, bet) in enumerate(zip(self.players, self.bets)):
+        for i, (player, bet) in enumerate(zip(self.players, self.bets)):
             player.decrement_balance(bet)
             player_payouts[i] -= bet
         # copy_bets = self.bets.copy()
         unique_betting_values_buckets = sorted([(bet, len([j for j in range(len(self.bets)) if self.bets[j] >= bet]))
-                                         for bet in set(self.bets)])
+                                                for bet in set(self.bets)])
         unique_betting_values = [bet for bet, _ in unique_betting_values_buckets]
         payouts = [bet - previous_bet for bet, previous_bet in
                    zip(unique_betting_values, [0] + unique_betting_values[:-1])]
@@ -110,13 +124,13 @@ class Round:
             sorted_potential_access = sorted(potential_access, key=lambda x: hands[x], reverse=True)
             winner_count = 1
             for i, _ in enumerate(sorted_potential_access[:-1]):
-                if hands[sorted_potential_access[i]].is_equivalent(hands[sorted_potential_access[i+1]]):
+                if hands[sorted_potential_access[i]].is_equivalent(hands[sorted_potential_access[i + 1]]):
                     winner_count += 1
                 else:
                     break
             for i in sorted_potential_access[:winner_count]:
-                self.players[i].increment_balance((payout*count)//winner_count)# may annihilate some money
-                player_payouts[i] += (payout*count)//winner_count
+                self.players[i].increment_balance((payout * count) // winner_count)  # may annihilate some money
+                player_payouts[i] += (payout * count) // winner_count
         hole_cards = [hole.get_cards_tuples() for hole in self.holes]
         if self.logger:
             self.logger.log_community_cards(self.community.get_card_tuples())
@@ -131,8 +145,9 @@ class Round:
                 strategy: Strategy = player.get_strategy()
                 # strategy.inform_result(self.round, player.get_balance(), tuple(hole_cards), self.community.get_card_tuples(),
                 #                        tuple(self.bets))
-                l.append(executor.submit(strategy.inform_result, self.round, player.get_balance(), tuple(hole_cards), self.community.get_card_tuples(),
-                                 tuple(self.bets)))
+                l.append(executor.submit(strategy.inform_result, self.round, player.get_balance(), tuple(hole_cards),
+                                         self.community.get_card_tuples(),
+                                         tuple(self.bets)))
             for future in concurrent.futures.as_completed(l):
                 try:
                     future.result(timeout=TIMEOUT)
@@ -140,14 +155,3 @@ class Round:
                     print("Timeout")
                 except Exception as e:
                     print(e)
-
-
-
-
-
-
-
-
-
-
-
