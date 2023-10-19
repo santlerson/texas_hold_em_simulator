@@ -50,7 +50,8 @@ class Round:
         if self.logger:
             self.logger.log_holes_cards([hole.get_cards_tuples() for hole in self.holes])
 
-        while self.stage < len(STAGES) and len([i for i in range(len(self.players)) if not self.folded[i]]) > 1:
+        while self.stage < len(STAGES) and len([i for i in range(len(self.players)) if (not self.folded[i]) and
+                                                self.players[i].get_balance()>0]) > 1:
             cards_tuple = self.community.get_card_tuples()
             i = self.small_blind_index
             betting_done = False
