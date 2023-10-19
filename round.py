@@ -42,10 +42,14 @@ class Round:
         self.logger: Logger = logger
         if logger:
             logger.create_new_round(self.big_blind_index, self.small_blind_index)
+            logger.log_blinds(self.bets[self.big_blind_index], self.bets[self.small_blind_index])
 
 
     def play(self):
         cards_tuple = self.community.get_card_tuples()
+        if self.logger:
+            self.logger.log_holes_cards([hole.get_cards_tuples() for hole in self.holes])
+
         while self.stage < len(STAGES) and len([i for i in range(len(self.players)) if not self.folded[i]]) > 1:
             cards_tuple = self.community.get_card_tuples()
             i = self.small_blind_index
@@ -74,9 +78,10 @@ class Round:
                 minimum_bet = min(max(self.bets) - self.bets[i], player.get_balance()-self.bets[i])
                 if not isinstance(bet, int) or bet < minimum_bet or bet + self.bets[i] > player.get_balance() or\
                         self.folded[i]:
-                    self.folded[i] = True
-                    if self.logger:
+                    if self.logger and not self.folded[i]:
                         self.logger.log_fold(i)
+                    self.folded[i] = True
+
                 else:
                     self.bets[i] += bet
                     if self.logger:
@@ -113,7 +118,6 @@ class Round:
                 player_payouts[i] += (payout*count)//winner_count
         hole_cards = [hole.get_cards_tuples() for hole in self.holes]
         if self.logger:
-            self.logger.log_holes_cards(hole_cards)
             self.logger.log_community_cards(self.community.get_card_tuples())
         for i, folded in enumerate(self.folded):
             if folded:

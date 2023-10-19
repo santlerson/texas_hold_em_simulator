@@ -31,13 +31,17 @@ def arena(strategy_paths, strategy_names, game_parameters=None, development_mode
         strategies.append(strategy_class(i))
     print(strategy_names)
     if game_parameters is None:
-        game_parameters = GameParameters()
+        game_parameters = GameParameters(
+            starting_balance=1000,
+            big_blind=lambda round_number: 100,
+            small_blind=lambda round_number: 50
+        )
     logger = Logger(strategy_names)
     game = Game(game_parameters, tuple(strategies), logger)
     winner = game.play()
     if not os.path.exists(LOG_DIR):
         os.makedirs(LOG_DIR)
-    logger.write(os.path.join("logs", f"{time.time()}.xml"))
+    logger.write(os.path.join("logs", f"{time.time()}.json"))
     print("The winner is " + strategy_names[winner])
 
 
@@ -49,7 +53,7 @@ def main():
     strategy_files = []
     for strategy_file in files:
         if strategy_file.endswith(".py"):
-            strategy_names.append(strategy_file[:-3])
+            strategy_names.append(strategy_file[:-3].split("/")[-1])
             strategy_files.append(strategy_file)
     arena(strategy_files, strategy_names,
           development_mode=False  # set to True during development for more easy debugging

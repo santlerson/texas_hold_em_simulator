@@ -15,6 +15,8 @@ class Game:
             [Player(strategy, game_parameters.starting_balance) for strategy in strategies])
         self.game_parameters = game_parameters
         self.logger = logger
+        if self.logger:
+            self.logger.log_game_params(game_parameters)
 
     def play(self):
         # bar = tqdm()
