@@ -26,6 +26,8 @@ class Game:
             while self.players[sb_index].get_balance() <= 0:
                 sb_index = (sb_index + 1) % len(self.players)
             bb_index = (sb_index + 1) % len(self.players)
+            while self.players[bb_index].get_balance() <= 0:
+                bb_index = (bb_index + 1) % len(self.players)
             round = Round(self.round_id, self.players, self.game_parameters, sb_index, bb_index, self.logger)
             round.play()
             self.round_id += 1
