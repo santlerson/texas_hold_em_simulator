@@ -36,9 +36,10 @@ class Round:
         self.round = round_id
         self.game_parameters = game_parameters
         self.deck = Deck()
-        self.holes: List[Hole] = [Hole(self.deck.draw(2)) for _ in players]
         self.community = Community.from_deck(self.deck)
         self.players: Tuple[Player] = players
+        self.in_game = [player.get_balance() > 0 for player in players]
+        self.holes: List[Hole] = [Hole(self.deck.draw(2)) for i, _ in enumerate(players) ]
         self.bets[self.big_blind_index] = min(game_parameters.get_big_blind(round_id),
                                               players[self.big_blind_index].get_balance())
         self.bets[self.small_blind_index] = min(game_parameters.get_small_blind(round_id),
@@ -53,7 +54,8 @@ class Round:
     def play(self):
         cards_tuple = self.community.get_card_tuples()
         if self.logger:
-            self.logger.log_holes_cards([hole.get_cards_tuples() for hole in self.holes])
+            self.logger.log_holes_cards([hole.get_cards_tuples() if self.in_game[i] else None for i, hole in
+                                         enumerate(self.holes)])
 
         while self.stage < len(STAGES) and len([i for i in range(len(self.players)) if (not self.folded[i]) and
                                                                                        self.players[
@@ -69,38 +71,37 @@ class Round:
                                                                       (not self.folded[j])
                                                                     and (self.bets[j] or
                                                                          self.players[j].get_balance())]) > 1:
-
                 betting_done = True
                 has_had_chance_to_bet[i] = True
                 player = self.players[i]
-
+                if self.in_game[i]:
                 # bet = player.get_strategy().get_bet(self.round, self.game_parameters.starting_balance, tuple(self.bets),
                 #                      self.big_blind_index, cards_tuple, self.holes[i].get_cards_tuples(), tuple(self.folded))
-                with concurrent.futures.ThreadPoolExecutor() as executor:
-                    future = executor.submit(player.get_strategy().get_bet, self.round, player.get_balance(),
-                                             tuple(self.bets),
-                                             self.small_blind_index, cards_tuple, self.holes[i].get_cards_tuples(),
-                                             tuple(self.folded))
-                    try:
-                        bet = future.result(timeout=TIMEOUT)
-                    except concurrent.futures.TimeoutError:
-                        bet = -1  # fold
-                        print("Player {} timed out".format(i))
-                    except Exception as e:
-                        print("Player {} raised an exception: {}".format(i, e))
-                        bet = -1  # fold
+                    with concurrent.futures.ThreadPoolExecutor() as executor:
+                        future = executor.submit(player.get_strategy().get_bet, self.round, player.get_balance(),
+                                                 tuple(self.bets),
+                                                 self.small_blind_index, cards_tuple, self.holes[i].get_cards_tuples(),
+                                                 tuple(self.folded))
+                        try:
+                            bet = future.result(timeout=TIMEOUT)
+                        except concurrent.futures.TimeoutError:
+                            bet = -1  # fold
+                            print("Player {} timed out".format(i))
+                        except Exception as e:
+                            print("Player {} raised an exception: {}".format(i, e))
+                            bet = -1  # fold
 
-                minimum_bet = min(max(self.bets) - self.bets[i], player.get_balance() - self.bets[i])
-                if not isinstance(bet, int) or bet < minimum_bet or bet + self.bets[i] > player.get_balance() or \
-                        self.folded[i]:
-                    if self.logger and not self.folded[i]:
-                        self.logger.log_fold(i)
-                    self.folded[i] = True
+                    minimum_bet = min(max(self.bets) - self.bets[i], player.get_balance() - self.bets[i])
+                    if not isinstance(bet, int) or bet < minimum_bet or bet + self.bets[i] > player.get_balance() or \
+                            self.folded[i]:
+                        if self.logger and not self.folded[i]:
+                            self.logger.log_fold(i)
+                        self.folded[i] = True
 
-                else:
-                    self.bets[i] += bet
-                    if self.logger:
-                        self.logger.log_bet(i, bet, self.bets[i])
+                    else:
+                        self.bets[i] += bet
+                        if self.logger:
+                            self.logger.log_bet(i, bet, self.bets[i])
                 i = (i + 1) % len(self.players)
             self.stage += 1
             self.community.advance_stage()
