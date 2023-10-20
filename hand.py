@@ -74,7 +74,7 @@ class Hand:
                 return hand_type
         raise Exception('No hand type found')
 
-
+    @cache
     def __lt__(self, other):
         if (self.get_hand_type()) != (other.get_hand_type()):
             return (self.get_hand_type()) > (other.get_hand_type())
@@ -84,18 +84,22 @@ class Hand:
             return self.get_sorted_of_a_kind_ranks() < other.get_sorted_of_a_kind_ranks()
         raise Exception('No hand type found')
 
-
+    @cache
     def __gt__(self, other):
         return other < self
 
+    @cache
     def __le__(self, other):
         return not other < self
 
+    @cache
     def __ge__(self, other):
         return not self < other
 
+    @cache
     def is_equivalent(self, other):
         return (not self < other) and (not other < self)
+
 
     def __hash__(self):
         return hash(self.cards)
