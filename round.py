@@ -62,7 +62,7 @@ class Round:
                                                                                            i].get_balance() > 0]) > 1:
             has_had_chance_to_bet = [False for _ in self.players]
             cards_tuple = self.community.get_card_tuples()
-            i = self.small_blind_index if self.stage != PREFLOP else (self.small_blind_index + 1) % len(self.players)
+            i = self.small_blind_index if self.stage != PREFLOP else (self.big_blind_index + 1) % len(self.players)
             betting_done = False
             while any([((not self.folded[j]) and
                         (self.bets[j] < min(max(self.bets), self.players[j].get_balance()))) or
