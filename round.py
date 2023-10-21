@@ -32,7 +32,7 @@ class Round:
                  big_blind_index, logger: "Logger" = None):
         self.big_blind_index = big_blind_index
         self.small_blind_index = small_blind_index
-        self.bets = [0 for _ in players]
+        self.bets: List[int] = [0 for _ in players]
         self.round = round_id
         self.game_parameters = game_parameters
         self.deck = Deck()
@@ -73,14 +73,29 @@ class Round:
                                                                          self.players[j].get_balance())]) > 1:
                 betting_done = True
                 has_had_chance_to_bet[i] = True
-                player = self.players[i]
+                player: Player = self.players[i]
                 if self.in_game[i]:
-                # bet = player.get_strategy().get_bet(self.round, self.game_parameters.starting_balance, tuple(self.bets),
-                #                      self.big_blind_index, cards_tuple, self.holes[i].get_cards_tuples(), tuple(self.folded))
+                    # player.get_strategy().get_bet(self.round,
+                    #                               tuple([p.get_balance()-self.bets[i]
+                    #                                      for p in self.players]),
+                    #                               tuple(self.bets),
+                    #                                 self.small_blind_index,
+                    #                               self.big_blind_index,
+                    #                               tuple(self.in_game),
+                    #                               self.community.get_card_tuples(),
+                    #                                 self.holes[i].get_cards_tuples(),
+                    #                                 tuple(self.folded))
                     with concurrent.futures.ThreadPoolExecutor() as executor:
-                        future = executor.submit(player.get_strategy().get_bet, self.round, player.get_balance(),
+                        future = executor.submit(player.get_strategy().get_bet,
+                                                 self.round,
+                                                 tuple([p.get_balance() - self.bets[i]
+                                                        for p in self.players]),
                                                  tuple(self.bets),
-                                                 self.small_blind_index, cards_tuple, self.holes[i].get_cards_tuples(),
+                                                 self.small_blind_index,
+                                                 self.big_blind_index,
+                                                 tuple(self.in_game),
+                                                 self.community.get_card_tuples(),
+                                                 self.holes[i].get_cards_tuples(),
                                                  tuple(self.folded))
                         try:
                             bet = future.result(timeout=TIMEOUT)
