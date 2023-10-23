@@ -11,10 +11,16 @@ TIMEOUT = 1
 
 
 class GameParameters:
-    def __init__(self, starting_balance=1000, big_blind=lambda round_number: 10, small_blind=lambda round_number: 5):
+    def __init__(self, starting_balance=1000,
+                 blind_period=10, initial_big_blind=20, initial_small_blind=10, blind_base=1.2,
+                 ):
         self.starting_balance = starting_balance
-        self.big_blind = big_blind
-        self.small_blind = small_blind
+        self.blind_period = blind_period
+        self.initial_big_blind = initial_big_blind
+        self.initial_small_blind = initial_small_blind
+        self.blind_base = blind_base
+        self.big_blind = lambda round_number: int(initial_big_blind * (blind_base ** (round_number // blind_period)))
+        self.small_blind = lambda round_number: int(initial_small_blind * (blind_base ** (round_number // blind_period)))
 
     def get_big_blind(self, round_number):
         return self.big_blind(round_number)
@@ -22,6 +28,8 @@ class GameParameters:
     def get_small_blind(self, round_number):
         return self.small_blind(round_number)
 
+    def get_blind_parameters(self):
+        return self.blind_period, self.initial_big_blind, self.initial_small_blind, self.blind_base
 
 STAGES = range(4)
 (PREFLOP, FLOP, TURN, RIVER) = STAGES

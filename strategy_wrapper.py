@@ -14,7 +14,8 @@ def get_securely_wrapped_class(file_path: str) -> strategy.Strategy:
     local_dict = {}
     my_builtins = safe_builtins.copy()
     my_builtins.update(utility_builtins)
-    my_builtins.update({"min": min, "max": max, "len": len, "sum": sum, "all": all, "any": any, "abs": abs})
+    my_builtins.update({"min": min, "max": max, "len": len, "sum": sum, "all": all, "any": any, "abs": abs,
+                        "super": super})
     global_dict = {**safe_globals, **utility_builtins, "__metaclass__": type,
                    "__name__": file_path,
                    "__builtins__": my_builtins,

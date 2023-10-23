@@ -3,6 +3,19 @@ from typing import Tuple, Union
 
 
 class Strategy:
+
+    def setup(self, player_id, blind_period, initial_big_blind, initial_small_blind, blind_base):
+        self.player_id = player_id
+        self.blind_period = blind_period
+        self.initial_big_blind = initial_big_blind
+        self.initial_small_blind = initial_small_blind
+        self.blind_base = blind_base
+
+    def get_current_blinds(self, round_id):
+        sb = int(self.initial_small_blind * (self.blind_base ** (round_id // self.blind_period)))
+        bb = int(self.initial_big_blind * (self.blind_base ** (round_id // self.blind_period)))
+        return sb, bb
+
     @abstractmethod
     def get_bet(self, round_id: int, balances: Tuple[int], bets: Tuple[int],
                 small_blind_index: int, big_blind_index: int,

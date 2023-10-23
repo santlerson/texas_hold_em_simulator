@@ -2,8 +2,8 @@ from strategy import Strategy
 
 class MyStrategy(Strategy):
 
-    def __init__(self, player_id):
-        self.player_id = player_id
+    def __init__(self, player_id, blind_period, initial_big_blind, initial_small_blind, blind_base):
+        super().setup(player_id, blind_period, initial_big_blind, initial_small_blind, blind_base)
 
 
     def get_bet(self, round_id, balances, bets,

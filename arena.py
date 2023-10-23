@@ -26,16 +26,16 @@ def arena(strategy_paths, strategy_names, game_parameters=None, development_mode
                 strategy_class= strategy_wrapper.get_securely_wrapped_class(strategy_file)
             strategy_classes.append(strategy_class)
             # strategy_names.append(strategy_name)
-
-    for i, strategy_class in enumerate(strategy_classes):
-        strategies.append(strategy_class(i))
-    print(strategy_names)
     if game_parameters is None:
         game_parameters = GameParameters(
             starting_balance=1000,
-            big_blind=lambda round_number: 100,
-            small_blind=lambda round_number: 50
+            initial_big_blind=80,
+            initial_small_blind=40
         )
+    for i, strategy_class in enumerate(strategy_classes):
+        strategies.append(strategy_class(i, *game_parameters.get_blind_parameters()))
+    print(strategy_names)
+
     logger = Logger(strategy_names)
     game = Game(game_parameters, tuple(strategies), logger)
     winner = game.play()
