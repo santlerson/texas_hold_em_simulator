@@ -7,7 +7,7 @@ class Strategy:
     def get_bet(self, round_id: int, balances: Tuple[int], bets: Tuple[int],
                 small_blind_index: int, big_blind_index: int,
                 players_in_game: Tuple[bool], community_cards: Tuple[Tuple[int]],
-                hole_cards: Tuple[Tuple[int]], folded: Tuple[bool]):
+                hole_cards: Tuple[Tuple[int]], folded: Tuple[bool]) -> int:
         """
         Place bet according to input parameters (and perhaps some internal state), note: function will still be
         called after you have folded in subsequent rounds of betting (so you can learn your opponents' behaviours),
@@ -33,7 +33,7 @@ class Strategy:
     def inform_result(self, round_id: int, balances: Tuple[int],
                       holes_cards: Union[Tuple[Union[Tuple[Tuple[int]], None]], None],
                       community_cards: Tuple[Tuple[int]],
-                      bets: Tuple[int]):
+                      bets: Tuple[int]) -> None:
         """
         Inform the strategy of the result of the round
         :param round_id: Number representing the round of the game (incremental)
