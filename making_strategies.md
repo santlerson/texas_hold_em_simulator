@@ -38,6 +38,8 @@ want to bet (meaning the number of chips you want to put in the pot this time). 
 would not be a valid and legal bet for example:
 
 - `-1`
+- `0.5`
+- `1.0` (or any whole number passed as a float)
 - `"fold"`
 - `"My name is Inigo Montoya. You killed my father. Prepare to die."`
 - Any amount more than your remaining stack
@@ -132,3 +134,13 @@ sb, bb = self.get_current_blinds(round_id)
 ```
 
 where `round_id` is the current round. This is useful for making decisions based on the blinds.
+
+## Final Notes
+
+- Your class _must_ be called `MyStrategy` and must inherit from `Strategy`.
+- No reading/writing files at runtime
+- No importing modules with some notable exceptions:
+  - `import math` (and not `from math import *` etc.)
+  - `import random` (and not `from random import *` etc.)
+  - `from strategy import Strategy`
+  - (I will strongly consider adding support for numpy)

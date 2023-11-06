@@ -23,12 +23,5 @@ The base class for strategies is in `strategy.py`
 Examples can be seen in `sample_strategies/`. Add your strategies to this directory to test them out against
 the others!
 
-### Rules for Strategies
-- No reading/writing files at runtime
-- No importing modules with some notable exceptions:
-  - `import math` (and not `from math import *` etc.)
-  - `import random` (and not `from random import *` etc.)
-  - `from strategy import Strategy`
-  - (I will strongly consider adding support for numpy)
 
 Developed and tested on Python 3.9.2
